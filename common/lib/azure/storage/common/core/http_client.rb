@@ -26,6 +26,7 @@
 
 module Azure::Storage::Common::Core
   module HttpClient
+    POOL_SIZE = 20
     # Returns the http agent based on uri
     # @param uri  [URI|String] the base uri (scheme, host, port) of the http endpoint
     # @return [Net::HTTP] http agent for a given uri
@@ -72,7 +73,7 @@ module Azure::Storage::Common::Core
                         end || nil
         Faraday.new(uri, ssl: ssl_options, proxy: proxy_options) do |conn|
           conn.use FaradayMiddleware::FollowRedirects
-          conn.adapter :net_http_persistent, pool_size: 5 do |http|
+          conn.adapter :net_http_persistent, pool_size: POOL_SIZE do |http|
             # yields Net::HTTP::Persistent
             http.idle_timeout = 100
           end

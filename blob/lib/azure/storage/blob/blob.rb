@@ -23,6 +23,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #--------------------------------------------------------------------------
+require 'thread'
 
 module Azure::Storage
   module Blob
@@ -82,11 +83,47 @@ module Azure::Storage
     #                                   - The lease ID specified in the request matches that of the blob.
     #                                  If this header is specified and both of these conditions are not met, the request will fail
     #                                  and the Get Blob operation will fail with status code 412 (Precondition Failed).
+    # * +:single_get+                - Boolean. If True, do not use Threads to complete the request concurrently.
     #
     # See http://msdn.microsoft.com/en-us/library/azure/dd179440.aspx
     #
     # Returns a blob and the blob body
     def get_blob(container, blob, options = {})
+      unless options[:single_get]
+        # fetch in parallel if over single get threshold
+        single_get_threshold = 1024 * 1024 * 75
+        if options[:end_range].to_i - options[:start_range].to_i > single_get_threshold
+          blob_size = get_blob_properties(container, blob, options).properties[:content_length]
+          offset = options[:start_range]
+          chunk_size = [options[:end_range], blob_size].min - options[:start_range]
+
+          # if after adjusting end_range for blob_size, may be appropriate to single_get
+          if chunk_size <= single_get_threshold
+            return get_blob(container, blob, options.merge({single_get: true, start_range: start, end_range: fin}))
+          end
+
+          thread_count = 15
+          single_thread_chunk = (chunk_size.to_f / thread_count).ceil
+
+          threads = []
+          ranges = (1..thread_count).to_a.map do |i|
+            start = offset + ((i - 1) * single_thread_chunk)
+            fin = [start + single_thread_chunk - 1, options[:end_range]].min
+            [start, fin]
+          end
+          ranges.each do |start, fin|
+            thread = Thread.new do
+              _, chunk = get_blob(container, blob, options.merge({single_get: true, start_range: start, end_range: fin}))
+              chunk
+            end
+            thread.abort_on_exception = true
+            threads << thread
+          end
+
+          return nil, threads.map(&:value).join
+        end
+      end
+
       query = {}
       StorageService.with_query query, "snapshot", options[:snapshot]
       StorageService.with_query query, "timeout", options[:timeout] if options[:timeout]
