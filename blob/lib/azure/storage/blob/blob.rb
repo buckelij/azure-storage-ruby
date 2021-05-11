@@ -99,7 +99,7 @@ module Azure::Storage
 
           # if after adjusting end_range for blob_size, may be appropriate to single_get
           if chunk_size <= single_get_threshold
-            return get_blob(container, blob, options.merge({single_get: true, start_range: start, end_range: fin}))
+            return get_blob(container, blob, options.merge({single_get: true}))
           end
 
           thread_count = 15
