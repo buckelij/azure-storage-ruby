@@ -38,6 +38,7 @@ Gem::Specification.new do |s|
   s.license     = "MIT"
   s.files       = `git ls-files ./lib/azure/storage/common/`.split("\n") << "./lib/azure/storage/common.rb"
   s.files       += `git ls-files ./lib/azure/core/`.split("\n") << "./lib/azure/core.rb" << "./lib/azure/http_response_helper.rb"
+    s.metadata =  { "github_repo" => "https://github.com/buckelij/azure-storage-ruby" }
 
   s.required_ruby_version = ">= 2.3.0"
 

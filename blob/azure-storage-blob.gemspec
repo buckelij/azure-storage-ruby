@@ -37,6 +37,7 @@ Gem::Specification.new do |s|
   s.homepage    = "http://github.com/azure/azure-storage-ruby"
   s.license     = "MIT"
   s.files       = `git ls-files ./lib/azure/storage/blob/`.split("\n") << "./lib/azure/storage/blob.rb"
+  s.metadata =  { "github_repo" => "https://github.com/buckelij/azure-storage-ruby" }
 
   s.required_ruby_version = ">= 2.3.0"
 
